@@ -81,7 +81,93 @@
               <th class="px-4 py-3">彙整</th>
               <th class="px-4 py-3">2</th>
               <th class="px-4 py-3">3</th>
-              <th class="px-4 py-3">
+              <th class="px-4 py-3">4</th>
+              <th class="px-4 py-3">5</th>
+              <th class="px-4 py-3">6</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y">
+            <!-- 第一行：日期區段選擇（第一欄，跨六欄） -->
+            <tr>
+              <td class="px-4 py-3" colspan="6">
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+                  <div class="md:col-span-2">
+                    <label class="text-sm text-slate-600">起始日期</label>
+                    <input id="range-start" type="date" class="w-full mt-1 px-3 py-2 rounded-xl border bg-white" />
+                  </div>
+                  <div class="md:col-span-2">
+                    <label class="text-sm text-slate-600">結束日期</label>
+                    <input id="range-end" type="date" class="w-full mt-1 px-3 py-2 rounded-xl border bg-white" />
+                  </div>
+                  <div class="md:col-span-1 flex items-end">
+                    <button id="btn-filter" class="w-full px-4 py-2 rounded-xl bg-slate-900 text-white font-semibold shadow hover:opacity-90">套用篩選</button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+
+            <!-- 第二行：總中靶率（第一欄） -->
+            <tr>
+              <td class="px-4 py-4 align-top">
+                <div class="text-sm text-slate-500 mb-1">區段內總中靶率</div>
+                <div id="overall-rate" class="text-2xl font-bold text-slate-900">—</div>
+                <div id="overall-sample" class="text-xs text-slate-500 mt-1">—</div>
+              </td>
+              <td class="px-4 py-4" colspan="5"></td>
+            </tr>
+
+            <!-- 第三行：各箭中靶率（第1~6欄） -->
+            <tr>
+              <td class="px-4 py-4">
+                <div class="text-sm text-slate-500 mb-1">第 1 箭中靶率</div>
+                <div id="a1-rate" class="text-xl font-bold text-slate-900">—</div>
+                <div id="a1-sample" class="text-xs text-slate-500 mt-1">—</div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="text-sm text-slate-500 mb-1">第 2 箭中靶率</div>
+                <div id="a2-rate" class="text-xl font-bold text-slate-900">—</div>
+                <div id="a2-sample" class="text-xs text-slate-500 mt-1">—</div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="text-sm text-slate-500 mb-1">第 3 箭中靶率</div>
+                <div id="a3-rate" class="text-xl font-bold text-slate-900">—</div>
+                <div id="a3-sample" class="text-xs text-slate-500 mt-1">—</div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="text-sm text-slate-500 mb-1">第 4 箭中靶率</div>
+                <div id="a4-rate" class="text-xl font-bold text-slate-900">—</div>
+                <div id="a4-sample" class="text-xs text-slate-500 mt-1">—</div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="text-sm text-slate-500 mb-1">第 5 箭中靶率</div>
+                <div id="a5-rate" class="text-xl font-bold text-slate-900">—</div>
+                <div id="a5-sample" class="text-xs text-slate-500 mt-1">—</div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="text-sm text-slate-500 mb-1">第 6 箭中靶率</div>
+                <div id="a6-rate" class="text-xl font-bold text-slate-900">—</div>
+                <div id="a6-sample" class="text-xs text-slate-500 mt-1">—</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 明細列表（可選） -->
+      <div class="overflow-x-auto rounded-2xl border bg-white shadow">
+        <table class="w-full text-left">
+          <thead class="bg-slate-100 text-slate-600 text-sm">
+            <tr>
+              <th class="px-4 py-3 w-[140px]">日期</th>
+              <th class="px-4 py-3">第幾行</th>
+              <th class="px-4 py-3">紀錄</th>
+              <th class="px-4 py-3">○/×/空</th>
+            </tr>
+          </thead>
+          <tbody id="report-body" class="divide-y"></tbody>
+        </table>
+      </div>
+    </section>
   </div>
 
   <script>
@@ -270,11 +356,11 @@
 
       // 計算：總中靶率（只計入有標記的格：○ 或 ×）
       const sum = {hits:0, tries:0};
-      const arrow = [0,1,2,3].map(()=>({hits:0, tries:0})); // 前四箭
+      const arrow = Array.from({length:6}, () => ({hits:0, tries:0})); // 前六箭(()=>({hits:0, tries:0})); // 前四箭
       list.forEach(e => {
         e.marks.forEach((m, idx) => {
           if(m!==0){ sum.tries++; if(m===1) sum.hits++; }
-          if(idx < 4){ if(m!==0){ arrow[idx].tries++; if(m===1) arrow[idx].hits++; } }
+          if(idx < 6){ if(m!==0){ arrow[idx].tries++; if(m===1) arrow[idx].hits++; } }
         });
       });
       const pct = (h,t) => t===0 ? '—' : (Math.round((h/t)*1000)/10).toFixed(1)+'%';
@@ -282,7 +368,7 @@
       document.getElementById('overall-rate').textContent = pct(sum.hits, sum.tries);
       document.getElementById('overall-sample').textContent = sum.tries ? `樣本：${sum.hits}/${sum.tries}` : '無資料';
       // 更新各箭中靶率
-      [1,2,3,4].forEach((n,i)=>{
+      [1,2,3,4,5,6].forEach((n,i)=>{
         const r = pct(arrow[i].hits, arrow[i].tries);
         document.getElementById(`a${n}-rate`).textContent = r;
         document.getElementById(`a${n}-sample`).textContent = arrow[i].tries ? `樣本：${arrow[i].hits}/${arrow[i].tries}` : '無資料';
