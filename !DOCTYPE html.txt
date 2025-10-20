@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>射箭紀錄簿</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    html, body { font-family: 'Noto Sans TC', system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; }
+    /* 點格的狀態顯示 */
+    .mark-btn { @apply w-10 h-10 flex items-center justify-center rounded-xl border text-lg cursor-pointer select-none; }
+    .mark-empty { @apply bg-white border-gray-300; }
+    .mark-circle { @apply border-emerald-400 bg-emerald-50; }
+    .mark-cross  { @apply border-rose-400 bg-rose-50; }
+    .tab-active { @apply bg-slate-900 text-white shadow; }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+  <div class="max-w-5xl mx-auto p-4 md:p-8">
+    <header class="mb-6 flex items-center gap-3">
+      <div class="w-10 h-10 rounded-2xl bg-slate-900 text-white grid place-items-center text-lg font-bold">🎯</div>
+      <div>
+        <h1 class="text-2xl md:text-3xl font-bold text-slate-900">射箭紀錄簿</h1>
+        <p class="text-slate-500">簡單記錄每一靶次（6箭），跨日彙整、匯出 CSV，資料保存在瀏覽器（可離線）。</p>
+      </div>
+    </header>
+
+    <!-- Tabs -->
+    <div class="inline-flex rounded-2xl border bg-white p-1 shadow-sm mb-6">
+      <button id="tab-log" class="px-4 py-2 rounded-xl text-sm font-semibold tab-active">紀錄</button>
+      <button id="tab-report" class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600">查詢／彙整</button>
+    </div>
+
+    <!-- Page: Log -->
+    <section id="page-log" class="space-y-4">
+      <div class="flex flex-wrap items-center gap-3 justify-between">
+        <div class="flex items-center gap-2">
+          <button id="btn-add" class="px-4 py-2 rounded-xl bg-slate-900 text-white font-semibold shadow hover:opacity-90">＋ 新增一行</button>
+          <button id="btn-clear-today" class="px-4 py-2 rounded-xl bg-white border font-semibold text-slate-700 hover:bg-slate-50">清空當日</button>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="btn-export" class="px-3 py-2 rounded-xl bg-white border font-medium hover:bg-slate-50">匯出 CSV</button>
+          <label class="px-3 py-2 rounded-xl bg-white border font-medium cursor-pointer hover:bg-slate-50">
+            匯入 JSON <input id="import-json" type="file" accept="application/json" class="hidden" />
+          </label>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto rounded-2xl border bg-white shadow">
+        <table class="w-full text-left">
+          <thead class="bg-slate-100 text-slate-600 text-sm">
+            <tr>
+              <th class="px-4 py-3 w-[180px]">日期</th>
+              <th class="px-4 py-3">1</th>
+              <th class="px-4 py-3">2</th>
+              <th class="px-4 py-3">3</th>
+              <th class="px-4 py-3">4</th>
+              <th class="px-4 py-3">5</th>
+              <th class="px-4 py-3">6</th>
+              <th class="px-4 py-3 w-[120px]">統計</th>
+              <th class="px-4 py-3 w-[60px]"></th>
+            </tr>
+          </thead>
+          <tbody id="log-body" class="divide-y"></tbody>
+        </table>
+      </div>
+      <p class="text-xs text-slate-500">提示：點格子可在「空 → ○ → ×」之間切換；資料會自動儲存在瀏覽器的 <code>localStorage</code>。</p>
+    </section>
+
+    <!-- Page: Report -->
+    <section id="page-report" class="hidden space-y-4">
+      <!-- 指定版型：第一行第一欄 = 日期區段選擇；第二行第一欄 = 總中靶率；第三行前四欄 = 第1~4箭中靶率 -->
+      <div class="overflow-x-auto rounded-2xl border bg-white shadow">
+        <table class="w-full text-left">
+          <thead class="bg-slate-100 text-slate-600 text-sm">
+            <tr>
+              <th class="px-4 py-3">彙整</th>
+              <th class="px-4 py-3">2</th>
+              <th class="px-4 py-3">3</th>
+              <th class="px-4 py-3">4</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y">
+            <!-- 第一行：日期區段選擇（第一欄，跨四欄） -->
+            <tr>
+              <td class="px-4 py-3" colspan="4">
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+                  <div class="md:col-span-2">
+                    <label class="text-sm text-slate-600">起始日期</label>
+                    <input id="range-start" type="date" class="w-full mt-1 px-3 py-2 rounded-xl border bg-white" />
+                  </div>
+                  <div class="md:col-span-2">
+                    <label class="text-sm text-slate-600">結束日期</label>
+                    <input id="range-end" type="date" class="w-full mt-1 px-3 py-2 rounded-xl border bg-white" />
+                  </div>
+                  <div class="md:col-span-1 flex items-end">
+                    <button id="btn-filter" class="w-full px-4 py-2 rounded-xl bg-slate-900 text-white font-semibold shadow hover:opacity-90">套用篩選</button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+
+            <!-- 第二行：總中靶率（第一欄） -->
+            <tr>
+              <td class="px-4 py-4 align-top">
+                <div class="text-sm text-slate-500 mb-1">區段內總中靶率</div>
+                <div id="overall-rate" class="text-2xl font-bold text-slate-900">—</div>
+                <div id="overall-sample" class="text-xs text-slate-500 mt-1">—</div>
+              </td>
+              <td class="px-4 py-4" colspan="3"></td>
+            </tr>
+
+            <!-- 第三行：各箭中靶率（第1~4欄） -->
+            <tr>
+              <td class="px-4 py-4">
+                <div class="text-sm text-slate-500 mb-1">第 1 箭中靶率</div>
+                <div id="a1-rate" class="text-xl font-bold text-slate-900">—</div>
+                <div id="a1-sample" class="text-xs text-slate-500 mt-1">—</div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="text-sm text-slate-500 mb-1">第 2 箭中靶率</div>
+                <div id="a2-rate" class="text-xl font-bold text-slate-900">—</div>
+                <div id="a2-sample" class="text-xs text-slate-500 mt-1">—</div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="text-sm text-slate-500 mb-1">第 3 箭中靶率</div>
+                <div id="a3-rate" class="text-xl font-bold text-slate-900">—</div>
+                <div id="a3-sample" class="text-xs text-slate-500 mt-1">—</div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="text-sm text-slate-500 mb-1">第 4 箭中靶率</div>
+                <div id="a4-rate" class="text-xl font-bold text-slate-900">—</div>
+                <div id="a4-sample" class="text-xs text-slate-500 mt-1">—</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 明細列表（可選） -->
+      <div class="overflow-x-auto rounded-2xl border bg-white shadow">
+        <table class="w-full text-left">
+          <thead class="bg-slate-100 text-slate-600 text-sm">
+            <tr>
+              <th class="px-4 py-3 w-[140px]">日期</th>
+              <th class="px-4 py-3">第幾行</th>
+              <th class="px-4 py-3">紀錄</th>
+              <th class="px-4 py-3">○/×/空</th>
+            </tr>
+          </thead>
+          <tbody id="report-body" class="divide-y"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // —— 資料結構 ——
+    // entries: [{ id, date: 'YYYY-MM-DD', marks: [0|1|-1, ...6個], createdAt }]
+    const LS_KEY = 'archery_entries_v1';
+    const todayStr = () => new Date().toISOString().slice(0,10);
+
+    function loadEntries() {
+      try {
+        const raw = localStorage.getItem(LS_KEY);
+        if (!raw) return [];
+        const arr = JSON.parse(raw);
+        return Array.isArray(arr) ? arr : [];
+      } catch (e) { return []; }
+    }
+    function saveEntries(entries) {
+      localStorage.setItem(LS_KEY, JSON.stringify(entries));
+    }
+
+    let entries = loadEntries();
+
+    // —— UI 工具 ——
+    const logBody = document.getElementById('log-body');
+    const reportBody = document.getElementById('report-body');
+    const reportSummary = document.getElementById('report-summary');
+
+    function markToChar(v){
+      if (v === 1) return '○';
+      if (v === -1) return '×';
+      return '';
+    }
+    function nextMark(v){
+      if (v === 0) return 1;   // 空 → ○
+      if (v === 1) return -1;  // ○ → ×
+      return 0;                // × → 空
+    }
+    function countStats(marks){
+      let o=0, x=0, e=0; // ○, ×, 空
+      for (const m of marks){ if(m===1) o++; else if(m===-1) x++; else e++; }
+      return {o,x,e};
+    }
+
+    function renderLog(){
+      logBody.innerHTML = '';
+      entries.forEach((row, idx) => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50';
+        // 日期欄
+        const tdDate = document.createElement('td');
+        tdDate.className = 'px-4 py-3';
+        const inp = document.createElement('input');
+        inp.type = 'date';
+        inp.value = row.date || todayStr();
+        inp.className = 'px-3 py-2 rounded-xl border bg-white';
+        inp.addEventListener('change', () => { row.date = inp.value; saveEntries(entries); renderReport(); });
+        tdDate.appendChild(inp);
+        tr.appendChild(tdDate);
+
+        // 六個格
+        row.marks = row.marks || [0,0,0,0,0,0];
+        const cells = [];
+        for(let i=0;i<6;i++){
+          const td = document.createElement('td');
+          td.className = 'px-2 py-2';
+          const btn = document.createElement('button');
+          btn.className = 'mark-btn mark-empty';
+          btn.textContent = markToChar(row.marks[i]);
+          applyMarkClass(btn, row.marks[i]);
+          btn.addEventListener('click', () => {
+            row.marks[i] = nextMark(row.marks[i]);
+            btn.textContent = markToChar(row.marks[i]);
+            applyMarkClass(btn, row.marks[i]);
+            // 更新統計
+            const s = countStats(row.marks);
+            tdStat.textContent = `○ ${s.o} ／ × ${s.x} ／ 空 ${s.e}`;
+            saveEntries(entries);
+            renderReport();
+          });
+          td.appendChild(btn);
+          tr.appendChild(td);
+          cells.push(btn);
+        }
+
+        // 統計欄
+        const tdStat = document.createElement('td');
+        tdStat.className = 'px-4 py-3 text-sm text-slate-600';
+        const s = countStats(row.marks);
+        tdStat.textContent = `○ ${s.o} ／ × ${s.x} ／ 空 ${s.e}`;
+        tr.appendChild(tdStat);
+
+        // 刪除
+        const tdDel = document.createElement('td');
+        tdDel.className = 'px-4 py-3';
+        const del = document.createElement('button');
+        del.className = 'px-3 py-2 rounded-lg bg-white border text-slate-700 hover:bg-rose-50 hover:border-rose-300';
+        del.textContent = '刪除';
+        del.addEventListener('click', () => {
+          if(confirm('確定刪除此行？')){
+            entries.splice(idx,1);
+            saveEntries(entries);
+            renderLog();
+            renderReport();
+          }
+        });
+        tdDel.appendChild(del);
+        tr.appendChild(tdDel);
+
+        logBody.appendChild(tr);
+      });
+    }
+
+    function applyMarkClass(el, v){
+      el.classList.remove('mark-empty','mark-circle','mark-cross');
+      if (v===1) el.classList.add('mark-circle');
+      else if (v===-1) el.classList.add('mark-cross');
+      else el.classList.add('mark-empty');
+    }
+
+    // —— 新增／清空 ——
+    document.getElementById('btn-add').addEventListener('click', () => {
+      const defaultDate = entries.length ? entries[entries.length-1].date : todayStr();
+      entries.push({ id: crypto.randomUUID(), date: defaultDate, marks: [0,0,0,0,0,0], createdAt: Date.now() });
+      saveEntries(entries);
+      renderLog();
+      renderReport();
+    });
+    document.getElementById('btn-clear-today').addEventListener('click', () => {
+      const d = todayStr();
+      let changed = false;
+      entries.forEach(e => { if(e.date===d){ e.marks=[0,0,0,0,0,0]; changed=true; }});
+      if(changed){ saveEntries(entries); renderLog(); renderReport(); }
+    });
+
+    // —— 匯出 CSV ——
+    document.getElementById('btn-export').addEventListener('click', () => {
+      const rows = [['date','row_index','m1','m2','m3','m4','m5','m6']];
+      entries.forEach((e, i) => {
+        rows.push([e.date, i+1, ...e.marks.map(v => v===1?'O':(v===-1?'X':''))]);
+      });
+      const csv = rows.map(r=>r.map(x => String(x)).join(',')).join('\n');
+      const blob = new Blob(["\ufeff"+csv], {type:'text/csv;charset=utf-8;'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'archery_log.csv';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+
+    // —— 匯入 JSON ——
+    document.getElementById('import-json').addEventListener('change', (ev) => {
+      const file = ev.target.files?.[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          if(Array.isArray(data)){
+            entries = data;
+            saveEntries(entries);
+            renderLog();
+            renderReport();
+            alert('匯入成功');
+          } else alert('格式不正確');
+        } catch(e){ alert('解析失敗'); }
+      };
+      reader.readAsText(file, 'utf-8');
+      ev.target.value = '';
+    });
+
+    // —— 查詢／彙整 ——
+    function renderReport(){
+      // 日期範圍
+      const start = document.getElementById('range-start').value;
+      const end = document.getElementById('range-end').value;
+      const inRange = (d) => {
+        if(start && d < start) return false;
+        if(end && d > end) return false;
+        return true;
+      };
+
+      const list = entries
+        .map((e, i)=>({...e, rowIndex:i+1}))
+        .filter(e => inRange(e.date))
+        .sort((a,b) => a.date.localeCompare(b.date) || a.rowIndex - b.rowIndex);
+
+      // 計算：總中靶率（只計入有標記的格：○ 或 ×）
+      const sum = {hits:0, tries:0};
+      const arrow = [0,1,2,3].map(()=>({hits:0, tries:0})); // 前四箭
+      list.forEach(e => {
+        e.marks.forEach((m, idx) => {
+          if(m!==0){ sum.tries++; if(m===1) sum.hits++; }
+          if(idx < 4){ if(m!==0){ arrow[idx].tries++; if(m===1) arrow[idx].hits++; } }
+        });
+      });
+      const pct = (h,t) => t===0 ? '—' : (Math.round((h/t)*1000)/10).toFixed(1)+'%';
+      // 更新總中靶率
+      document.getElementById('overall-rate').textContent = pct(sum.hits, sum.tries);
+      document.getElementById('overall-sample').textContent = sum.tries ? `樣本：${sum.hits}/${sum.tries}` : '無資料';
+      // 更新各箭中靶率
+      [1,2,3,4].forEach((n,i)=>{
+        const r = pct(arrow[i].hits, arrow[i].tries);
+        document.getElementById(`a${n}-rate`).textContent = r;
+        document.getElementById(`a${n}-sample`).textContent = arrow[i].tries ? `樣本：${arrow[i].hits}/${arrow[i].tries}` : '無資料';
+      });
+
+      // 明細表
+      reportBody.innerHTML = '';
+      list.forEach(e => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50';
+        const {o,x,e:empty} = countStats(e.marks);
+        tr.innerHTML = `
+          <td class=\"px-4 py-3\">${e.date}</td>
+          <td class=\"px-4 py-3\">第 ${e.rowIndex} 行</td>
+          <td class=\"px-4 py-3\">${e.marks.map(markToChar).join(' ')}</td>
+          <td class=\"px-4 py-3 text-sm text-slate-600\">○ ${o} ／ × ${x} ／ 空 ${empty}</td>
+        `;
+        reportBody.appendChild(tr);
+      });
+    }
+
+    document.getElementById('btn-filter').addEventListener('click', renderReport);
+
+    // 預設日期範圍（當月）
+    (function initDefaultRange(){
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = now.getMonth();
+      const first = new Date(y, m, 1).toISOString().slice(0,10);
+      const last = new Date(y, m+1, 0).toISOString().slice(0,10);
+      document.getElementById('range-start').value = first;
+      document.getElementById('range-end').value = last;
+    })();
+
+    // —— 分頁切換 ——
+    const tabLog = document.getElementById('tab-log');
+    const tabReport = document.getElementById('tab-report');
+    const pageLog = document.getElementById('page-log');
+    const pageReport = document.getElementById('page-report');
+    tabLog.addEventListener('click', () => {
+      tabLog.classList.add('tab-active');
+      tabReport.classList.remove('tab-active');
+      pageLog.classList.remove('hidden');
+      pageReport.classList.add('hidden');
+    });
+    tabReport.addEventListener('click', () => {
+      tabReport.classList.add('tab-active');
+      tabLog.classList.remove('tab-active');
+      pageReport.classList.remove('hidden');
+      pageLog.classList.add('hidden');
+      renderReport();
+    });
+
+    // 初次渲染
+    if(entries.length===0){
+      entries.push({ id: crypto.randomUUID(), date: todayStr(), marks: [0,0,0,0,0,0], createdAt: Date.now() });
+      saveEntries(entries);
+    }
+    renderLog();
+    renderReport();
+  </script>
+</body>
+</html>
