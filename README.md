@@ -1,5 +1,4 @@
 # flyclovertina.github.io
-<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
@@ -25,7 +24,7 @@
       <div class="w-10 h-10 rounded-2xl bg-slate-900 text-white grid place-items-center text-lg font-bold">🎯</div>
       <div>
         <h1 class="text-2xl md:text-3xl font-bold text-slate-900">射箭紀錄簿</h1>
-        <p class="text-slate-500">簡單記錄每一靶次（6箭），跨日彙整、匯出 CSV，資料保存在瀏覽器（可離線）。</p>
+        <p class="text-slate-500">記錄每一輪上靶狀況（6箭）</p>
       </div>
     </header>
 
