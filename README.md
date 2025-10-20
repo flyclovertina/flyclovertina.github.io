@@ -73,7 +73,7 @@
 
     <!-- Page: Report -->
     <section id="page-report" class="hidden space-y-4">
-      <!-- 指定版型：第一行第一欄 = 日期區段選擇；第二行第一欄 = 總中靶率；第三行前四欄 = 第1~4箭中靶率 -->
+      <!-- 指定版型：第一行第一欄 = 日期區段選擇；第二行第一欄 = 總中靶率；第三行前六欄 = 第1~6箭中靶率 -->
       <div class="overflow-x-auto rounded-2xl border bg-white shadow">
         <table class="w-full text-left">
           <thead class="bg-slate-100 text-slate-600 text-sm">
@@ -81,81 +81,7 @@
               <th class="px-4 py-3">彙整</th>
               <th class="px-4 py-3">2</th>
               <th class="px-4 py-3">3</th>
-              <th class="px-4 py-3">4</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y">
-            <!-- 第一行：日期區段選擇（第一欄，跨四欄） -->
-            <tr>
-              <td class="px-4 py-3" colspan="4">
-                <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
-                  <div class="md:col-span-2">
-                    <label class="text-sm text-slate-600">起始日期</label>
-                    <input id="range-start" type="date" class="w-full mt-1 px-3 py-2 rounded-xl border bg-white" />
-                  </div>
-                  <div class="md:col-span-2">
-                    <label class="text-sm text-slate-600">結束日期</label>
-                    <input id="range-end" type="date" class="w-full mt-1 px-3 py-2 rounded-xl border bg-white" />
-                  </div>
-                  <div class="md:col-span-1 flex items-end">
-                    <button id="btn-filter" class="w-full px-4 py-2 rounded-xl bg-slate-900 text-white font-semibold shadow hover:opacity-90">套用篩選</button>
-                  </div>
-                </div>
-              </td>
-            </tr>
-
-            <!-- 第二行：總中靶率（第一欄） -->
-            <tr>
-              <td class="px-4 py-4 align-top">
-                <div class="text-sm text-slate-500 mb-1">區段內總中靶率</div>
-                <div id="overall-rate" class="text-2xl font-bold text-slate-900">—</div>
-                <div id="overall-sample" class="text-xs text-slate-500 mt-1">—</div>
-              </td>
-              <td class="px-4 py-4" colspan="3"></td>
-            </tr>
-
-            <!-- 第三行：各箭中靶率（第1~4欄） -->
-            <tr>
-              <td class="px-4 py-4">
-                <div class="text-sm text-slate-500 mb-1">第 1 箭中靶率</div>
-                <div id="a1-rate" class="text-xl font-bold text-slate-900">—</div>
-                <div id="a1-sample" class="text-xs text-slate-500 mt-1">—</div>
-              </td>
-              <td class="px-4 py-4">
-                <div class="text-sm text-slate-500 mb-1">第 2 箭中靶率</div>
-                <div id="a2-rate" class="text-xl font-bold text-slate-900">—</div>
-                <div id="a2-sample" class="text-xs text-slate-500 mt-1">—</div>
-              </td>
-              <td class="px-4 py-4">
-                <div class="text-sm text-slate-500 mb-1">第 3 箭中靶率</div>
-                <div id="a3-rate" class="text-xl font-bold text-slate-900">—</div>
-                <div id="a3-sample" class="text-xs text-slate-500 mt-1">—</div>
-              </td>
-              <td class="px-4 py-4">
-                <div class="text-sm text-slate-500 mb-1">第 4 箭中靶率</div>
-                <div id="a4-rate" class="text-xl font-bold text-slate-900">—</div>
-                <div id="a4-sample" class="text-xs text-slate-500 mt-1">—</div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- 明細列表（可選） -->
-      <div class="overflow-x-auto rounded-2xl border bg-white shadow">
-        <table class="w-full text-left">
-          <thead class="bg-slate-100 text-slate-600 text-sm">
-            <tr>
-              <th class="px-4 py-3 w-[140px]">日期</th>
-              <th class="px-4 py-3">第幾行</th>
-              <th class="px-4 py-3">紀錄</th>
-              <th class="px-4 py-3">○/×/空</th>
-            </tr>
-          </thead>
-          <tbody id="report-body" class="divide-y"></tbody>
-        </table>
-      </div>
-    </section>
+              <th class="px-4 py-3">
   </div>
 
   <script>
